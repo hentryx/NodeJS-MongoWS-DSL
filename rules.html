@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<title>Rules List -MongoDB-Angularjs-Nodejs-JQuery-Bootstrap- By Henry Bautista - 2017</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<style>
+.box-centered{
+	position: relative;
+	margin-left: auto;
+	margin-right: auto;
+	left:15%;
+	width: 70%;
+	right: 15%;
+}
+.right-aligned{
+	position:relative;
+	float:right;
+	display:inline-block;
+	margin-left:1%;
+	
+}
+.center-aligned{
+	position:relative;
+	display:inline-block;
+	margin-left:1%;
+}
+.row{
+	margin-left:0px !important;
+	margin-right:0px !important;
+}
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js" crossorigin="anonymous"></script>    
+<script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script language="javascript">
+var app = angular.module( "DataApp", [] );
+app.controller('DataController',function( $scope, $http ) {	
+    // labels for future multilanguaje
+	$scope.lbl_id="Identifier";
+	$scope.lbl_name="Name";
+	$scope.lbl_condition="Condition";
+	$scope.lbl_operations="Actions";
+	$scope.lbl_newRule="New Rule";
+	$scope.lbl_infer="Infer";
+	$scope.lbl_edit="Edit";
+	$scope.lbl_delete="Delete";
+	$scope.rules=[];
+    // Getting Model Data from Json Web Service
+	$http({	url:'http://localhost:8080/api/rules',
+			method: 'GET',
+			headers: {'Content-Type':'application/json'}
+	}).then(function(data) {
+		$scope.rules=data.data;	
+	});	
+    // Action buttons
+	$scope.edi = function(event){
+		document.location='edit.html?'+event.target.id;	
+	};	
+	$scope.del = function(event){
+		if(confirm('Are you sure?')){
+			var id=event.target.id
+			$http({	url:'http://localhost:8080/api/rules/'+id,
+					method: 'DELETE',
+					headers: {'Content-Type':'application/x-www-for-urlencoded;charset=UTF-8'}
+			}).then(function(data) {
+				alert('succesfully deleted');
+					location.reload();	
+			});	
+		}
+	};
+});	
+</script>
+</head>
+<body ng-app="DataApp" ng-controller="DataController" >
+    <br />
+    <br />
+    <div class="col-sm-9 box-centered">
+        <h3>Rules List</h3>
+        <a class="btn btn-primary right-aligned" id="createRule"><span class="glyphicon glyphicon-plus"></span>&nbsp;&nbsp;{{lbl_newRule}}</a>
+        <a class="btn btn-info right-aligned" id="inferRule"><span class="glyphicon glyphicon-eye-open"></span>&nbsp;&nbsp;{{lbl_infer}}</a>
+        <br />
+        <br />
+        <br />
+		<table class="table table-bordered table-hover table-condensed table-responsive" id="ruleslist">
+			<thead>
+				<tr style="background-color:#f7f7f7">
+					<th style="width:30%;color:#555555;font-size:large;text-align:center">{{lbl_id}}</th>
+					<th style="width:20%;color:#555555;font-size:large;text-align:center">{{lbl_name}}</th>
+					<th style="width:30%;color:#555555;font-size:large;text-align:center">{{lbl_condition}}</th>
+                    <th style="width:20%;color:#555555;font-size:large;text-align:center">{{lbl_operations}}</th>
+				</tr>
+			</thead> 
+			<tbody>
+				<tr style="border:0" ng-repeat="r in rules">
+                	<td style="width:30%;" >{{r._id}}</td>
+                    <td style="width:20%;" >{{r.name}}</td>
+                    <td style="width:30%;" >{{r.condition}}</td>
+                    <td style="width:20%;" align="center">
+                    <a class="btn btn-warning center-aligned editreg" id="{{r._id}}" data-ng-click="edi($event)"><span class="glyphicon glyphicon-pencil"></span>&nbsp;&nbsp;{{lbl_edit}}</a>
+                    <a class="btn btn-danger center-aligned delreg" id="{{r._id}}" data-ng-click="del($event)"><span class="glyphicon glyphicon-trash"></span>&nbsp;&nbsp;{{lbl_delete}}</a>
+                    </td>
+                </tr>
+			</tbody>
+		</table>
+	</div>
+<script>
+$( document ).ready( function () {
+//Top Bar Navigation buttons
+$('#createRule').click(function(){
+		document.location='add.html';
+	});
+    
+$('#inferRule').click(function(){
+		document.location='infer.html';
+	});    	
+});	
+</script>
+</body>
+</html>

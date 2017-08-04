@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<title>Infer Facts -MongoDB-Angularjs-Nodejs-JQuery-Bootstrap- By Henry Bautista - 2017</title>
+<link rel="stylesheet" href="//cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link href="node_modules/jsoneditor/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
+<style>
+.box-centered{
+	position: relative;
+	margin-left: auto;
+	margin-right: auto;
+	left:15%;
+	width: 70%;
+	right: 15%;
+}
+.right-aligned{
+	position:relative;
+	float:right;
+	display:inline-block;
+	margin-left:1%;
+	
+}
+.center-aligned{
+	position:relative;
+	display:inline-block;
+	margin-left:1%;
+}
+.row{
+	margin-left:0px !important;
+	margin-right:0px !important;
+}
+.jedit{
+	position:relative;
+	
+	display:inline-block;
+	padding-left:2%;
+	padding-right:2%;
+	width:32%;
+	height:400px;
+}
+.ledit{
+	position:relative;
+	
+	display:inline-block;
+	padding-left:2%;
+	padding-right:2%;
+	width:32%;
+	height:auto;
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js" crossorigin="anonymous"></script>
+<script src="node_modules/jsoneditor/dist/jsoneditor.min.js"></script>
+<script language="javascript">
+var connection = new WebSocket('ws://localhost:9090');
+
+    
+var app = angular.module( "DataApp", [] );
+app.controller('DataController',function( $scope, $http ) {	
+	$scope.lbl_id="Identifier";
+	$scope.lbl_name="Name";
+	$scope.lbl_condition="Condition";
+	$scope.lbl_operations="Actions";
+	$scope.lbl_newRule="New Rule";
+	$scope.lbl_infer="Infer";
+	$scope.lbl_edit="Edit";
+	$scope.lbl_delete="Delete";
+	$scope.lbl_facts="Facts (Writable)";
+	$scope.lbl_conditions="Conditions (From DSLs & MongoDB)";
+	$scope.lbl_consequences="Consequences (Auto WebSocket eval)";
+    $scope.lbl_back="Back";
+	$scope.rules=[];
+	
+	$http({	url:'http://localhost:8080/api/rules',
+			method: 'GET',
+			headers: {'Content-Type':'application/json'}
+	}).then(function(data) {
+		$scope.rules=data.data;	
+		var obj={};
+		for(i = 0; i <  $scope.rules.length; i++){
+			k=i+1;
+			obj[k]=$scope.rules[i].condition;	
+		}
+		var schemaA=JSON.parse(JSON.stringify(obj));
+		var conditions = document.getElementById("conditions");
+		var options = { mode: 'code'};
+		conditionseditor = new JSONEditor(conditions, options);
+		conditionseditor.set(schemaA);
+	});
+	
+
+});	
+</script>
+</head>
+<body ng-app="DataApp" ng-controller="DataController" >
+    <br />
+    <br />
+    <div class="col-sm-9 box-centered">
+        <h3>Infer Facts</h3>
+        <a class="btn btn-primary right-aligned" onclick="javascript:history.back();"><span class="glyphicon glyphicon-backward"></span>&nbsp;&nbsp;{{lbl_back}}</a>
+        <br />
+        <br />
+        <br />
+        <div>
+        <label for="facts" class="ledit">{{lbl_facts}}</label><label for="conditions" class="ledit">{{lbl_conditions}}</label><label for="consequences" class="ledit">{{lbl_consequences}}</label>
+        </div>
+        <div>
+		<div id="facts" class="jedit"></div>
+        <div id="conditions" class="jedit"></div>
+        <div id="consequences" class="jedit"></div>
+        </div>  
+	</div>
+<script>
+$( document ).ready( function () {
+var facts = document.getElementById("facts");
+    
+var options = { 
+    mode: 'code',   
+    onChange: function(){
+         var obj={};
+         obj[0]=factseditor.get();
+         obj[1]=conditionseditor.get();
+         connection.send(JSON.stringify(obj))   ;
+    }};
+factseditor = new JSONEditor(facts, options);
+    
+	
+});	
+
+var consequences = document.getElementById("consequences");
+var options = { mode: 'tree'};
+consequenceseditor = new JSONEditor(consequences, options);
+
+
+connection.onmessage = function (event) { 
+consequenceseditor.set(JSON.parse(event.data));
+};   
+
+</script>
+</body>
+</html>

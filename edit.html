@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Edit Rule -MongoDB-Angularjs-Nodejs-JQuery-Bootstrap- By Henry Bautista - 2017</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link rel="stylesheet" href="//cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" crossorigin="anonymous">
+<link href="node_modules/jsoneditor/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
+<style>
+.box-centered{
+	position: relative;
+	margin-left: auto;
+	margin-right: auto;
+	left:15%;
+	width: 70%;
+	right: 15%;
+}
+.right-aligned{
+	position:relative;
+	float:right;
+	display:inline-block;
+	margin-left:1%;
+	
+}
+.row{
+	margin-left:0px !important;
+	margin-right:0px !important;
+}
+.itemr{
+	position:relative;
+	float:right;
+	display:inline-block;
+	margin-left:1%;
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+<script src="node_modules/jsoneditor/dist/jsoneditor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.17.0/jquery.validate.min.js" crossorigin="anonymous"></script>
+<script language="javascript">
+var id=window.location.search.substr(1);
+var schemaA = "";
+var editor;
+var app = angular.module( "DataApp", [] );
+app.controller('DataController',function( $scope, $http ) {	
+	$scope.lbl_name="Rule Name";
+	$scope.lbl_condition="Rule DSL";
+	$scope.lbl_validation="Validate as:";
+    $scope.lbl_back="Back";
+	
+	$http({	url:'http://localhost:8080/api/rules/'+id,
+			method: 'GET',
+			headers: {'Content-Type':'application/json'}
+	}).then(function(data) {
+		$scope.info=data.data;
+
+		$scope.info.dsl=$scope.info.dsl.substr($scope.info.dsl.indexOf(",")+1);
+		var jsonpre= JSON.parse('{'+$scope.info.dsl);
+		if(Object.keys(jsonpre)!="condition"){	
+			$scope.info.dsl='{'+ $scope.info.dsl.substr($scope.info.dsl.indexOf(",")+1);
+		}else{
+			$scope.info.dsl='{'+$scope.info.dsl;
+		}
+		var container = document.getElementById("jsoneditor");
+        var options = {schema: JSON.parse($scope.info.dsl), mode: 'code'};
+        editor = new JSONEditor(container, options);
+        editor.set(JSON.parse($scope.info.dsl));
+	});		
+	$( document ).ready( function () {
+	$('.submit').click(function(){		
+		$( "#form" ).validate();
+            if ( $( "#form" ).valid() ) {
+				var rname=$('#rname').val();				
+				var jsonstr=JSON.stringify(editor.get());
+				if (jsonstr.length <= 2){
+					alert("json required");
+					return false;
+				}
+				jsonstr=jsonstr.replace('{','{ "name":"'+$('#rname').val()+'",');
+				$http({	url:'http://localhost:8080/api/rules/'+id,
+					method: 'PUT',
+					headers: {'Content-Type':'application/json'},
+					data:{
+						 name: rname,
+						   dsl: jsonstr	
+						}
+				}).then(function(data) {
+					alert('Succesfully Edited');
+					document.location='rules.html';	
+				});
+			}
+	});});
+});
+</script>
+</head>
+<body ng-app="DataApp" ng-controller="DataController" >
+    <br />
+    <br />
+    <div class="col-sm-9 box-centered">
+        <h3>Edit Rule</h3>
+        <a class="btn btn-primary right-aligned" onclick="javascript:history.back();"><span class="glyphicon glyphicon-backward"></span>&nbsp;&nbsp;{{lbl_back}}</a>
+        <br />
+        <br />
+        <br />
+		<form id="form" role="form">
+          	<div class="form-group">
+            	<label for="rname">{{lbl_name}}</label>
+            	<input type="rname" class="form-control" id="rname" name="rname" required="required" value="{{info.name}}">
+          	</div>
+          	<div class="form-group">
+            	<label for="pwd">{{lbl_condition}}</label>
+            	<div id="jsoneditor" style="width: 100%; height:400px;" value="{{indo.dsl}}"></div>
+          	</div>
+          	<button type="submit" class="btn btn-success submit">Submit</button>
+        </form>
+	</div>
+<script>
+$( document ).ready( function () {
+	jQuery.validator.addClassRules( "rname", {
+            required: true
+    });		
+});
+</script>
+</body>
+</html>
