@@ -41,7 +41,7 @@
                 [
                   {
                     "type": "fact",
-                    "field": "Mac"
+                    "field": "'Mac'"
                   }
                 ]
               ]

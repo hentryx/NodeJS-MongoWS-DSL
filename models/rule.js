@@ -1,3 +1,4 @@
+// Mongo DB Model
 exports = module.exports = function(app, mongoose) {
 	var ruleSchema = new mongoose.Schema({
         id: { type: String },

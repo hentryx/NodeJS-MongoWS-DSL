@@ -2,7 +2,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-
 <title>Infer Facts -MongoDB-Angularjs-Nodejs-JQuery-Bootstrap- By Henry Bautista - 2017</title>
 <link rel="stylesheet" href="//cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" crossorigin="anonymous">
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
@@ -57,9 +56,7 @@
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js" crossorigin="anonymous"></script>
 <script src="node_modules/jsoneditor/dist/jsoneditor.min.js"></script>
 <script language="javascript">
-var connection = new WebSocket('ws://localhost:9090');
-
-    
+var connection = new WebSocket('ws://localhost:9090');    
 var app = angular.module( "DataApp", [] );
 app.controller('DataController',function( $scope, $http ) {	
 	$scope.lbl_id="Identifier";
@@ -74,8 +71,7 @@ app.controller('DataController',function( $scope, $http ) {
 	$scope.lbl_conditions="Conditions (From DSLs & MongoDB)";
 	$scope.lbl_consequences="Consequences (Auto WebSocket eval)";
     $scope.lbl_back="Back";
-	$scope.rules=[];
-	
+	$scope.rules=[];	
 	$http({	url:'http://localhost:8080/api/rules',
 			method: 'GET',
 			headers: {'Content-Type':'application/json'}
@@ -92,8 +88,6 @@ app.controller('DataController',function( $scope, $http ) {
 		conditionseditor = new JSONEditor(conditions, options);
 		conditionseditor.set(schemaA);
 	});
-	
-
 });	
 </script>
 </head>
@@ -117,8 +111,7 @@ app.controller('DataController',function( $scope, $http ) {
 	</div>
 <script>
 $( document ).ready( function () {
-var facts = document.getElementById("facts");
-    
+var facts = document.getElementById("facts");    
 var options = { 
     mode: 'code',   
     onChange: function(){
@@ -127,20 +120,14 @@ var options = {
          obj[1]=conditionseditor.get();
          connection.send(JSON.stringify(obj))   ;
     }};
-factseditor = new JSONEditor(facts, options);
-    
-	
+    factseditor = new JSONEditor(facts, options);	
 });	
-
 var consequences = document.getElementById("consequences");
 var options = { mode: 'tree'};
 consequenceseditor = new JSONEditor(consequences, options);
-
-
 connection.onmessage = function (event) { 
 consequenceseditor.set(JSON.parse(event.data));
 };   
-
 </script>
 </body>
 </html>
