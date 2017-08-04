@@ -1,128 +1,106 @@
+// Setting Up Globals
 var express = require('express'),
-    bodyparser = require('body-parser'),
-    mongoose = require('mongoose'), 
+    bodyParser = require('body-parser'),
+    methodOverride  = require('method-override'),
+    mongoose = require('mongoose'),
     http = require('http'),
-    app,
+    app = express(),
     router,
-    server;
-app = express();
-var dsl = require('./ruleB.json');
+    server,
+    url = require('url'),
+    WebSocket = require('ws');
 
-
-
-
-var name=dsl.name;
-var condition=dsl.condition;
-var inputs=condition.inputs[0];
-
-
-
-
-var str= "";
-var data = new Array([]);
-
-try{
-    len=inputs[0].length;
-    data[0]=inputs;
-    console.log("pudo");
-}
-catch(e){
-    data[0][0]=inputs;
-    console.log("nopudo"+ e.message);
-}
-
-/*if (typeof inputs[0] === "undefined"){ data[0]=inputs;
-                                         console.log("indefinido");
-                                        }
-else {
-    console.log("definido");
-    data=inputs;
-}*/
-    
-Object.keys(data).forEach(
-    function(key){
-        var value = data[key];
-        console.log(key + ':' + value);
-    
-    });
-
-console.log("datalen:"+data[0].length);
-
-
-for(i=0;i<data[0].length;i++){
-    str += getJsComparisonString(data[0][i]) + getJsConditional(condition.type);
-}
-str=str.substr(0,str.length-4);
-console.log("str: "+str);
-
-
-
-
-mongoose.connect('mongodb://localhost/prueba1', function(err, res){
-    var msg="Connected";
+// Connecting to Mongo DB
+mongoose.connect('mongodb://localhost/rules', function (err, res){
+    var msg="Connection Established with localhost.MongoDB.rules";
     if(err) msg="Error connecting: "+err.message;
     console.log(msg);
 });
-app.use(bodyparser.json());
-router=express.Router();
-router.get('/',function(req, res){
-    res.json({test:str});
+
+// Implementing Middlewares 
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(methodOverride());
+
+// Loading Models & Controllers 
+var rules     = require('./models/rule')(app, mongoose);
+var RuleCtrl = require('./controllers/rules');
+
+// Testing Request & Response
+/*var router = express.Router();
+router.get('/', function(request, response) {
+  response.send(request.query);
 });
-app.use('/familia',router);
-server = http.createServer(app);
-server.listen(4000, function (){
-    console.log('localhost:4000/familia');
+app.use(router);*/
+
+// Enable simple web dir access
+app.use('/', express.static(__dirname + '/'));
+
+
+// Starting Routes
+var rules = express.Router();
+rules.route('/rules')
+  .get(RuleCtrl.findAllRules)
+  .post(RuleCtrl.addRule);
+rules.route('/rules/:id')
+  .get(RuleCtrl.findById)
+  .put(RuleCtrl.updateRule)
+  .delete(RuleCtrl.deleteRule); 
+app.use('/api', rules);
+
+// Start server
+app.listen(8080, function() {
+  console.log("Node server running on http://localhost:8080/api/");
 });
 
-function getJsComparisonString(obj){
-    console.log("trace de objeto:"+obj.a[0][0].type);
-    if(obj.type == "compare"){
-        var parta=obj.a[0][0].field?obj.a[0][0].field:obj.a[0][0].value;
-        var comparison=obj.condition;
-        var partb=obj.b[0][0].field?obj.b[0][0].field:obj.b[0][0].value;
-        
-    }
-    if(obj.a[0][0].type== "add"){
-        var parta=obj.a[0][0].inputs[0][0].field;
-        var comparison=" + ";
-        var partb=obj.a[0][0].inputs[0][1].field;
-        
-        obj.a[0][0]=obj.b[0][0];
-        var cond=obj.condition;
-        return "("+parta +" " + comparison + " " +partb+")"+cond+getJsComparisonString(obj);
-        /*var parta2=obj.b[0][0].a[0][0].field;
-        var comp2=obj.b[0][0].type;
-        var partb2=obj.b[0][0].b[0][0].field;
-        console.log(cond+parta2+comp2+partb2);*/
-        
-    }
-    if(obj.a[0][0].type== "div"){
-        var parta=obj.a[0][0].a[0][0].field;
-        var comparison=" / ";
-        var partb=obj.a[0][0].b[0][0].field;
-        return "("+parta +" " + comparison + " " +partb+")";
-    }
-    return "("+parta +" " + comparison + " " +partb+")" ;
-};
+// Define Websocket
+var server = http.createServer(app);
+var wss = new WebSocket.Server({ server });
+wss.on('connection', function connection(ws, req) {   
+  var location = url.parse(req.url, true);
+  ws.on('message', function incoming(message) {
+      function mydump(arr,level) {
+           var dumped_text = "";
+           if(!level) level = 0;
+           var level_padding = "";
+           for(var j=0;j<level+1;j++) level_padding += "    ";
+           if(typeof(arr) == 'object') {  
+               for(var item in arr) {
+                   var value = arr[item];
+                   if(typeof(value) == 'object') { 
+                       dumped_text += level_padding + "'" + item + "' ...\n";
+                       dumped_text += mydump(value,level+1);
+                   } 
+                   else {    
+                       dumped_text += level_padding + "'" + item + "' => \"" + value + "\"\n";
+                   }
+               }
+           }
+           else {                
+               dumped_text = "===>"+arr+"<===("+typeof(arr)+")";
+           }
+           return dumped_text;
+      }
+      try{  // Functions Eval thru metacode
+            var metacode="";    
+            metacode += " var str='';";    
+            var jsonstr=JSON.parse(message);
+            Object.keys(jsonstr[0]).forEach(function(key){
+                metacode += "var "+key+" = "+jsonstr[0][key]+";";
+            });     
+            Object.keys(jsonstr[1]).forEach(function(key){
+                metacode +="if("+jsonstr[1][key]+"){ str+='"+key+",';} ";
+            });
+            metacode += "str=str.substr(0,str.length-1);";
+            eval(metacode.toString());
+            console.log(str);
+            ws.send("["+str+"]");
+      } catch (e) {}
+  
+  }); 
+});
 
-function getJsConditional(cond){
-    var result="";
-    switch (cond) {
-        case "and":
-            result = " && ";
-            break;
-        case "or":
-            result = " || ";
-            break;
-        case "add":
-            result = " +  ";
-            break; 
-        case "div":
-            result = " /  ";
-            break;    
-        default:
-            result = " ";    
-    }
-    return result;
-};
-
+// Opening Web Socket
+server.listen(9090, function listening() {
+  console.log('Websocket Listening on port '+ server.address().port);
+});
